@@ -1,7 +1,9 @@
 import fs from 'fs';
 import path from 'path';
-import { BrowserWindow, app, session, ipcMain, dialog } from 'electron';
+import { BrowserWindow, app, session, dialog } from 'electron';
 import { searchDevtools } from 'electron-search-devtools';
+import { MyAPI } from './@types/MyAPI';
+import { registerIpcMainHandler } from './IpcProxy';
 
 const isDev = process.env.NODE_ENV === 'development';
 
@@ -21,22 +23,16 @@ if (isDev) {
 }
 /// #endif
 
-const createWindow = () => {
-  const mainWindow = new BrowserWindow({
-    width: 600,
-    height: 400,
-    show: false,
-    title: 'Electron',
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-    },
-  });
+class MyApiServer implements MyAPI {
+  mainWindow: BrowserWindow;
 
-  mainWindow.menuBarVisible = false;
+  constructor(mainWindow: BrowserWindow) {
+    this.mainWindow = mainWindow;
+  }
 
-  ipcMain.handle('open-dialog', async () => {
+  async openDialog() {
     const dirPath = await dialog
-      .showOpenDialog(mainWindow, {
+      .showOpenDialog(this.mainWindow, {
         properties: ['openDirectory'],
       })
       .then((result) => {
@@ -54,12 +50,31 @@ const createWindow = () => {
           .filter((dirent) => dirent.isFile())
           .map(({ name }) => path.join(dirPath, name)),
       );
+  }
+};
+
+function createWindow() {
+  const mainWindow = new BrowserWindow({
+    width: 600,
+    height: 400,
+    show: false,
+    title: 'Electron',
+    webPreferences: {
+      preload: path.join(__dirname, 'preload.js'),
+    },
   });
+
+  mainWindow.menuBarVisible = false;
+
+  const myApi = new MyApiServer(mainWindow);
+
+  registerIpcMainHandler<MyAPI>('my-api', myApi);
+
   if (isDev) mainWindow.webContents.openDevTools({ mode: 'detach' });
 
   mainWindow.loadFile('dist/index.html');
   mainWindow.once('ready-to-show', () => mainWindow.show());
-};
+}
 
 app.whenReady().then(async () => {
   if (isDev) {

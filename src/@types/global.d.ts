@@ -1,9 +1,7 @@
+import { MyAPI } from "./MyAPI";
+
 declare global {
   interface Window {
-    myAPI: Sandbox;
+    myAPI: MyAPI;
   }
-}
-
-export interface Sandbox {
-  openDialog: () => Promise<void | string[]>;
 }
