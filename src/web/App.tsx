@@ -1,33 +1,30 @@
-import React, { useState } from 'react';
-
-import './App.scss';
+import { Box, Button, List, ListItem } from '@material-ui/core';
+import React, { useCallback, useState } from 'react';
 
 const { myAPI } = window;
 
-export const App = (): JSX.Element => {
+export function App(): JSX.Element {
   const [filelist, setFilelist] = useState<string[]>([]);
 
-  const onClick = async () => {
+  const onClick = useCallback(async () => {
     const getPath = await myAPI.openDialog();
 
     if (getPath) setFilelist(getPath);
-  };
+  }, []);
 
   return (
-    <div className="container">
+    <Box>
       <h1>Hello world.</h1>
-      <button onClick={onClick} className="open-button">
+      <Button onClick={onClick} variant="contained" color="primary">
         Open
-      </button>
-      <div>
-        <ul>
-          {filelist.map((item) => (
-            <li className="list" key={item}>
-              {item}
-            </li>
-          ))}
-        </ul>
-      </div>
-    </div>
+      </Button>
+      <List>
+        {filelist.map((item) => (
+          <ListItem key={item}>
+            {item}
+          </ListItem>
+        ))}
+      </List>
+    </Box>
   );
 };
